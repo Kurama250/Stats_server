@@ -7,27 +7,23 @@
 
 <h5>A) Auto installer</h5>
 
-- First, download and upload the codes to your server !
-
-- After :
-
+- Run command :
+  
 ```shell script
-chmod +x setup_server.sh
-bash setup_server.sh
+bash <(curl -s https://raw.githubusercontent.com/Kurama250/Stats_server/main/setup_server.sh)
 ```
 <h5>B) Manual installer</h5>
 
 ```shell script
 apt update && apt upgrade -y
-apt install npm node.js zip
+apt install npm node.js git -y
 curl -fsSL https://deb.nodesource.com/setup_16.x | bash - &&\
 apt-get install -y nodejs
 ```
 
 ```shell script
-wget https://github.com/Kurama250/Stats_server/archive/refs/heads/main.zip
-unzip main.zip
-cd Stats_server-main/
+git clone https://github.com/Kurama250/Stats_server.git
+cd Stats_server
 npm install discord.js@13 child_process
 npm install pm2 -g
 ```
