@@ -3,7 +3,7 @@
 # Github : https://github.com/Kurama250
 
 apt update && apt upgrade -y
-apt install npm node.js git -y
+apt install npm nodejs git -y
 curl -fsSL https://deb.nodesource.com/setup_16.x | bash - &&\
 apt-get install -y nodejs -y
 git clone https://github.com/Kurama250/Stats_server.git
