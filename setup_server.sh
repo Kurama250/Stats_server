@@ -12,5 +12,5 @@ else
 fi
 git clone https://github.com/Kurama250/Stats_server.git
 cd Stats_server/
-npm install discord.js@13 child_process
+npm install discord.js@13 child_process os
 npm install pm2 -g
