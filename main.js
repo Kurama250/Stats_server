@@ -44,10 +44,15 @@ function getSystemStats(callback) {
 
         exec('sensors', (error, tempOutput) => {
           if (error) {
-            console.error(`Error executing sensors : ${error.message}`);
-            return callback(error);
+            // Check if the error is due to "No sensors found!"
+            if (error.message.includes('No sensors found!')) {
+              console.warn('No sensors found. Temperature information is not available.');
+              tempOutput = ''; // Set tempOutput to an empty string to proceed with other stats
+            } else {
+              console.error(`Error executing sensors : ${error.message}`);
+              return callback(error);
+            }
           }
-
           const CpuUsage = parseCpuUsage(cpuOutput);
           const RamUsage = parseMemoryUsage(memOutput);
           const StorageUsage = parseStorageUsage(diskOutput);
@@ -108,6 +113,11 @@ function parseTemperature(tempOutput) {
       return 'N/A';
     }
 
+    if (tempOutput.includes('No sensors found!')) {
+      console.warn('No sensors found. Temperature information is not available.');
+      return 'N/A';
+    }
+
     const adapterKeywords = {
       'jc42-i2c-0-18': 'temp1',
       'k10temp-pci-00c3': 'Tctl',
@@ -116,7 +126,7 @@ function parseTemperature(tempOutput) {
     };
 
     const adapter = Object.keys(adapterKeywords).find(key => tempOutput.includes(key));
-    
+
     if (!adapter) {
       console.error('No matching adapter found in temperature output :', tempOutput);
       return 'N/A';
@@ -161,14 +171,25 @@ async function updateStats() {
 
   embed.setDescription('**------------------------ Server Stats -----------------------**');
   embed.setThumbnail('https://raw.githubusercontent.com/Kurama250/Stats_server/main/img/linux.png')
-  embed.setColor('BLUE');
+  embed.setColor('PURPLE');
 
-  embed.addFields(
-    { name: 'CPU Usage', value: `${stats.CpuUsage}%`, inline: true },
-    { name: 'Memory Usage', value: `${stats.RamUsage}%`, inline: true },
-    { name: 'Disk Usage', value: `${stats.StorageUsage}`, inline: true },
-    { name: 'Temperature', value: `${stats.Temperature}`, inline: true }
-  );
+  embed.addFields({
+    name: 'CPU Usage',
+    value: `${stats.CpuUsage}%`,
+    inline: true
+  }, {
+    name: 'Memory Usage',
+    value: `${stats.RamUsage}%`,
+    inline: true
+  }, {
+    name: 'Disk Usage',
+    value: `${stats.StorageUsage}`,
+    inline: true
+  }, {
+    name: 'Temperature',
+    value: `${stats.Temperature}`,
+    inline: true
+  });
 
   const guild = await client.guilds.fetch(serverId);
   if (!guild) {
@@ -183,11 +204,15 @@ async function updateStats() {
   }
 
   if (message) {
-    message.edit({ embeds: [embed] }).catch((error) => {
+    message.edit({
+      embeds: [embed]
+    }).catch((error) => {
       console.log('Error editing message :', error);
     });
   } else {
-    message = await channel.send({ embeds: [embed] }).catch((error) => {
+    message = await channel.send({
+      embeds: [embed]
+    }).catch((error) => {
       console.log('Error sending message :', error);
     });
   }
