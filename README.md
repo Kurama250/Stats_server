@@ -24,14 +24,14 @@ bash <(curl -s https://raw.githubusercontent.com/Kurama250/Stats_server/main/set
 ```shell script
 apt update && apt upgrade -y
 apt install npm nodejs git -y
-curl -fsSL https://deb.nodesource.com/setup_16.x | bash - &&\
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&\
 apt-get install -y nodejs
 ```
 
 ```shell script
 git clone https://github.com/Kurama250/Stats_server.git
 cd Stats_server
-npm install discord.js@13 child_process
+npm install discord.js@13 child_process os
 npm install pm2 -g
 ```
 ## 2 - on Terminal
@@ -58,6 +58,6 @@ pm2 start main.js -n Stats_server
 
 - Demo : 
 
-![alt text](https://github.com/Kurama250/Stats_server/blob/main/stats-server.PNG)
+![alt text](https://github.com/Kurama250/Stats_server/blob/main/stats-server.png)
 
 <h1 align="center">Then it's the end you have started the bot have fun !</h1>
