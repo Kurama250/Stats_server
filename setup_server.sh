@@ -3,7 +3,7 @@
 # Github : https://github.com/Kurama250
 
 apt update && apt upgrade -y
-apt install npm nodejs git -y
+apt install npm nodejs git lm-sensors -y
 if ! command -v node &> /dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&\
     apt-get install -y nodejs -y
