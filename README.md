@@ -67,4 +67,5 @@ pm2 start main.js -n Stats_server
 
 ![alt text](https://github.com/Kurama250/Stats_server/blob/main/stats-server.png)
 
+<h3 align="center">If you like this repository don't hesitate to give it a star ⭐ !</h3>
 <h1 align="center">Then it's the end you have started the bot have fun !</h1>
