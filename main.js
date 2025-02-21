@@ -25,46 +25,18 @@ client.login(token);
 
 function getSystemStats(callback) {
   exec('top -bn1 | grep Cpu', (error, cpuOutput) => {
-    if (error) {
-      console.error(`Error executing top : ${error.message}`);
-      return callback(error);
-    }
-
+    if (error) return callback(error);
     exec('free -m | grep Mem', (error, memOutput) => {
-      if (error) {
-        console.error(`Error executing free : ${error.message}`);
-        return callback(error);
-      }
-
+      if (error) return callback(error);
       exec('df -h --output=pcent / | tail -1', (error, diskOutput) => {
-        if (error) {
-          console.error(`Error executing df : ${error.message}`);
-          return callback(error);
-        }
-
-        exec('sensors', (error, tempOutput) => {
-          if (error) {
-            // Check if the error is due to "No sensors found!"
-            if (error.message.includes('No sensors found!')) {
-              console.warn('No sensors found. Temperature information is not available.');
-              tempOutput = ''; // Set tempOutput to an empty string to proceed with other stats
-            } else {
-              console.error(`Error executing sensors : ${error.message}`);
-              return callback(error);
-            }
-          }
-          const CpuUsage = parseCpuUsage(cpuOutput);
-          const RamUsage = parseMemoryUsage(memOutput);
-          const StorageUsage = parseStorageUsage(diskOutput);
-          const Temperature = parseTemperature(tempOutput);
-
+        if (error) return callback(error);
+        exec('sensors || echo "N/A"', (error, tempOutput) => {
           const stats = {
-            CpuUsage,
-            RamUsage,
-            StorageUsage,
-            Temperature
+            CpuUsage: parseCpuUsage(cpuOutput),
+            RamUsage: parseMemoryUsage(memOutput),
+            StorageUsage: parseStorageUsage(diskOutput),
+            Temperature: parseTemperature(tempOutput)
           };
-
           callback(null, stats);
         });
       });
@@ -73,148 +45,54 @@ function getSystemStats(callback) {
 }
 
 function parseCpuUsage(cpuOutput) {
-  if (!cpuOutput) {
-    return 'N/A';
-  }
-
-  const cpuParts = cpuOutput.split(/\s+/);
-  const CpuUsage = cpuParts[1];
-
-  return CpuUsage;
+  return cpuOutput ? cpuOutput.split(/\s+/)[1] : 'N/A';
 }
 
 function parseMemoryUsage(memOutput) {
-  if (!memOutput) {
-    return 'N/A';
-  }
-
-  const memParts = memOutput.split(/\s+/);
-  const totalMem = parseFloat(memParts[1]);
-  const usedMem = parseFloat(memParts[2]);
-  const RamUsage = ((usedMem / totalMem) * 100).toFixed(2);
-
-  return RamUsage;
+  if (!memOutput) return 'N/A';
+  const [_, totalMem, usedMem] = memOutput.split(/\s+/).map(parseFloat);
+  return ((usedMem / totalMem) * 100).toFixed(2);
 }
 
 function parseStorageUsage(diskOutput) {
-  if (!diskOutput) {
-    return 'N/A';
-  }
-
-  const StorageUsage = diskOutput.trim();
-
-  return StorageUsage;
+  return diskOutput ? diskOutput.trim() : 'N/A';
 }
 
 function parseTemperature(tempOutput) {
-  try {
-    if (!tempOutput) {
-      console.error('Temperature output is empty.');
-      return 'N/A';
-    }
-
-    if (tempOutput.includes('No sensors found!')) {
-      console.warn('No sensors found. Temperature information is not available.');
-      return 'N/A';
-    }
-
-    const adapterKeywords = {
-      'jc42-i2c-0-18': 'temp1',
-      'k10temp-pci-00c3': 'Tctl',
-      'jc42-i2c-0-19': 'temp1',
-      'nct6795-isa-0a20': 'SYSTIN'
-    };
-
-    const adapter = Object.keys(adapterKeywords).find(key => tempOutput.includes(key));
-
-    if (!adapter) {
-      console.error('No matching adapter found in temperature output :', tempOutput);
-      return 'N/A';
-    }
-
-    const temperatureLine = tempOutput.split('\n').find(line => line.includes(adapterKeywords[adapter]));
-
-    if (!temperatureLine) {
-      console.error('Temperature line not found in output for adapter :', adapter);
-      return 'N/A';
-    }
-
-    const temperatureParts = temperatureLine.split(/\s+/);
-
-    if (temperatureParts.length < 2) {
-      console.error('Invalid temperature line format :', temperatureLine);
-      return 'N/A';
-    }
-
-    const temperature = temperatureParts[1];
-
-    return temperature || 'N/A';
-  } catch (error) {
-    console.error('Error parsing temperature :', error);
-    return 'N/A';
-  }
+  if (!tempOutput || tempOutput.includes('No sensors found')) return 'N/A';
+  const match = tempOutput.match(/\+([0-9]+\.[0-9])°C/);
+  return match ? `${match[1]}°C` : 'N/A';
 }
 
 async function updateStats() {
   const serverName = os.hostname();
   const osInfo = `${os.type()} ${os.release()}`;
-  const embed = new MessageEmbed().setTitle(`Stats for : **${serverName} (${osInfo})**`);
+  const embed = new MessageEmbed()
+    .setTitle(`Stats for : **${serverName} (${osInfo})**`)
+    .setDescription('**------------------------ Server Stats -----------------------**')
+    .setThumbnail('https://raw.githubusercontent.com/Kurama250/Stats_server/main/img/linux.png')
+    .setColor('PURPLE');
+
   const stats = await new Promise((resolve, reject) => {
-    getSystemStats((error, result) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(result);
-      }
-    });
+    getSystemStats((error, result) => (error ? reject(error) : resolve(result)));
   });
 
-  embed.setDescription('**------------------------ Server Stats -----------------------**');
-  embed.setThumbnail('https://raw.githubusercontent.com/Kurama250/Stats_server/main/img/linux.png')
-  embed.setColor('PURPLE');
-
-  embed.addFields({
-    name: 'CPU Usage',
-    value: `${stats.CpuUsage}%`,
-    inline: true
-  }, {
-    name: 'Memory Usage',
-    value: `${stats.RamUsage}%`,
-    inline: true
-  }, {
-    name: 'Disk Usage',
-    value: `${stats.StorageUsage}`,
-    inline: true
-  }, {
-    name: 'Temperature',
-    value: `${stats.Temperature}`,
-    inline: true
-  });
+  embed.addFields(
+    { name: 'CPU Usage', value: `${stats.CpuUsage}%`, inline: true },
+    { name: 'Memory Usage', value: `${stats.RamUsage}%`, inline: true },
+    { name: 'Disk Usage', value: `${stats.StorageUsage}`, inline: true },
+    { name: 'Temperature', value: `${stats.Temperature}`, inline: true }
+  );
 
   const guild = await client.guilds.fetch(serverId);
-  if (!guild) {
-    console.log(`Error server ID : ${serverId}`);
-    return;
-  }
-
+  if (!guild) return;
   const channel = await guild.channels.fetch(channelId);
-  if (!channel) {
-    console.log(`Error channel ID : ${channelId}`);
-    return;
-  }
+  if (!channel) return;
 
   if (message) {
-    message.edit({
-      embeds: [embed]
-    }).catch((error) => {
-      console.log('Error editing message :', error);
-    });
+    message.edit({ embeds: [embed] }).catch(console.error);
   } else {
-    message = await channel.send({
-      embeds: [embed]
-    }).catch((error) => {
-      console.log('Error sending message :', error);
-    });
+    message = await channel.send({ embeds: [embed] }).catch(console.error);
   }
 }
 
